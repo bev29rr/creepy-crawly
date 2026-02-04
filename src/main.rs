@@ -1,6 +1,7 @@
-use std::error::Error;
-
-use rusqlite::{params, Connection, Result};
+use std::{env, error::Error};
+use rusqlite::Connection;
+mod db; 
+mod crawl;
 
 #[derive(Debug)]
 struct TestStruct {
@@ -9,30 +10,22 @@ struct TestStruct {
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let conn = Connection::open_in_memory()?;
+    let conn = Connection::open("database.db")?;
+    let args: Vec<String> = env::args().collect();
+    match args.get(1) {
+        Some(command) => {
+            match command.as_str() {
+                "create" => db::build_db(conn),
+                "crawl" => crawl::from(args.get(2)),
+                "index" => db::index(conn, args.get(2)),
+                _ => help()
+            }
+        }
+        None => help()
+    }
+}
 
-    conn.execute(
-        "CREATE TABLE test (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL)",
-        ()
-    )?;
-
-    let test1 = TestStruct {
-        id: 0,
-        name: "steve".to_string()
-    };
-
-    conn.execute("INSERT INTO test (name) VALUES (?1)", (&test1.name,))?;
-
-    let mut stmt = conn.prepare("SELECT id, name FROM test")?;
-    let test_str_iter = stmt.query_map([], |row| {
-        Ok(TestStruct {
-            id: row.get(0)?,
-            name: row.get(1)?,
-        })
-    })?;
-
-    test_str_iter.for_each(|struc| {
-        println!("{:?}", struc);
-    });
+fn help() -> Result<(), Box<dyn Error>> {
+    println!("Unrecognised command.");
     Ok(())
 }
