@@ -18,14 +18,6 @@ pub fn build_db(conn: Connection) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-pub fn populate(conn: Connection) -> Result<(), Box<dyn Error>>  {
-    conn.execute("
-        INSERT INTO websites (url, contents) 
-        VALUES (?1, ?2)
-    ", &["test", "abced"])?;
-    Ok(())
-}
-
 pub fn index_count(conn: Connection, index_str: Option<&String>) -> Result<(), Box<dyn Error>> {
     if let Some(index_str) = index_str {
         let wrapped_index_str = format!("%{index_str}%");
