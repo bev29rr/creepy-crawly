@@ -21,9 +21,9 @@ pub fn from(conn: Connection, url: Option<&String>, depth: Option<&String>) -> R
 }
 
 fn iterate(conn: &Connection, url: &String, current_depth: u32, max_depth: u32) -> Result<(), Box<dyn Error>> {
-    if db::check_url_is_new()? == false {
+    if db::check_url_is_new(conn, url)? == false {
         println!(
-            "{} {}\n\t- Reason: {}",
+            "{} {}\n\tReason: {}",
             "Skipping".green(),
             url.underline(),
             "Already exists in DB".red()
@@ -31,7 +31,7 @@ fn iterate(conn: &Connection, url: &String, current_depth: u32, max_depth: u32) 
         return Ok(());
     } else if url.starts_with("http") == false {
         println!(
-            "{} {}\n\t- Reason: {}",
+            "{} {}\n\tReason: {}",
             "Skipping".green(),
             url.underline(),
             "Not a valid url".red()
