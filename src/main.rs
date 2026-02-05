@@ -1,13 +1,7 @@
 use std::{env, error::Error};
 use rusqlite::Connection;
 mod db; 
-mod crawl;
-
-#[derive(Debug)]
-struct TestStruct {
-    id: i32,
-    name: String
-}
+mod crawler;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let conn = Connection::open("database.db")?;
@@ -16,8 +10,9 @@ fn main() -> Result<(), Box<dyn Error>> {
         Some(command) => {
             match command.as_str() {
                 "create" => db::build_db(conn),
-                "crawl" => crawl::from(args.get(2)),
-                "index" => db::index(conn, args.get(2)),
+                "populate" => db::populate(conn),
+                "crawl" => crawler::from(args.get(2), args.get(3)),
+                "cindex" => db::index_count(conn, args.get(2)),
                 _ => help()
             }
         }
