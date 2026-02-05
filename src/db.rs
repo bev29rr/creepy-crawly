@@ -1,10 +1,12 @@
 use std::error::Error;
 use rusqlite::{Connection, Result, fallible_streaming_iterator::FallibleStreamingIterator};
 
+/*
 struct Websites {
     url: String,
     content: String
 }
+*/
 
 pub fn build_db(conn: Connection) -> Result<(), Box<dyn Error>> {
     conn.execute("CREATE TABLE websites (
@@ -42,6 +44,10 @@ pub fn check_url_is_new() -> Result<bool, Box<dyn Error>>  {
     Ok(true)
 }
 
-pub fn add_url(conn: Connection, url: &String, contents: &String) -> Result<(), Box<dyn Error>> {
+pub fn add_url(conn: &Connection, url: &String, contents: &String) -> Result<(), Box<dyn Error>> {
+    conn.execute("
+        INSERT INTO websites (url, contents) 
+        VALUES (?1, ?2)
+    ", &[url, contents])?;
     Ok(())
 }

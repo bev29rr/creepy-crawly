@@ -11,7 +11,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             match command.as_str() {
                 "create" => db::build_db(conn),
                 "populate" => db::populate(conn),
-                "crawl" => crawler::from(args.get(2), args.get(3)),
+                "crawl" => crawler::from(conn, args.get(2), args.get(3)),
                 "cindex" => db::index_count(conn, args.get(2)),
                 _ => help()
             }
