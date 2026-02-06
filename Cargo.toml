@@ -8,3 +8,4 @@ reqwest = { version = "0.13.1", features = ["blocking"] }
 scraper = "0.18"
 rusqlite = { version = "0.38.0", features = ["bundled"] }
 yansi = "1.0.1"
+texting_robots = "0.2.2"

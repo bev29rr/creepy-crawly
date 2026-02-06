@@ -1,5 +1,6 @@
 use reqwest::{blocking::get};
 use scraper::{Html, Selector};
+use texting_robots::{Robot, get_robots_url};
 use std::error::Error;
 use rusqlite::Connection;
 use yansi::Paint;
@@ -23,18 +24,29 @@ pub fn from(conn: Connection, url: Option<&String>, depth: Option<&String>) -> R
 fn iterate(conn: &Connection, url: &String, current_depth: u32, max_depth: u32) -> Result<(), Box<dyn Error>> {
     if db::check_url_is_new(conn, url)? == false {
         println!(
-            "{} {}\n\tReason: {}",
+            "{} {}\n\t{}: {}",
             "Skipping".green(),
             url.underline(),
+            "Reason".green(),
             "Already exists in DB".red()
         );
         return Ok(());
     } else if url.starts_with("http") == false {
         println!(
-            "{} {}\n\tReason: {}",
+            "{} {}\n\t{}: {}",
             "Skipping".green(),
             url.underline(),
+            "Reason".green(),
             "Not a valid url".red()
+        );
+        return Ok(());
+    } else if check_robots_allowed(url)? == false {
+        println!(
+            "{} {}\n\t{}: {}",
+            "Skipping".green(),
+            url.underline(),
+            "Reason".green(),
+            "Robots aren't allowed".red()
         );
         return Ok(());
     }
@@ -43,16 +55,30 @@ fn iterate(conn: &Connection, url: &String, current_depth: u32, max_depth: u32) 
         "Scraping".green(),
         url.underline()
     );
-    let raw_page = scrape(url)?;
-    db::add_url(conn, url, &raw_page)?;
-    let urls = get_urls(raw_page)?;
-    if current_depth < max_depth {
-        for url in urls {
-            iterate(conn, &url, current_depth+1, max_depth)?;
+
+    match scrape(url) {
+        Ok(raw_page) => {
+            db::add_url(conn, url, &raw_page)?;
+            let urls = get_urls(raw_page)?;
+            if current_depth < max_depth {
+                for url in urls {
+                    iterate(conn, &url, current_depth+1, max_depth)?;
+                }
+            }
+
+            Ok(())
+        }, 
+        Err(_) => {
+            println!(
+                "{} {}\n\t{}: {}",
+                "Failed to parse".green(),
+                url.underline(),
+                "Reason".green(),
+                "Cannot access url".red()
+            );
+            Ok(())
         }
     }
-
-    Ok(())
 }
 
 fn scrape(url: &String) -> Result<String, Box<dyn Error>> {
@@ -74,4 +100,17 @@ fn get_urls(raw_page: String) -> Result<Vec<String>, Box<dyn Error>> {
     }
 
     Ok(links)
+}
+
+fn check_robots_allowed(url: &String) -> Result<bool, Box<dyn Error>> {
+    let robots_url = get_robots_url(url)?;
+    match scrape(&robots_url) {
+        Ok(robots_txt) => {
+            let r = Robot::new("", robots_txt.as_bytes())?;
+            let allowed = r.allowed("https://www.rust-lang.org/ocean");
+
+            Ok(allowed)
+        },
+        Err(_) => Ok(true) // when robots doesn't exist, assume true
+    }
 }
